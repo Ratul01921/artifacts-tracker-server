@@ -40,7 +40,7 @@ async function run() {
             res.send(result)
         })
 
-        // get all jobs data from db
+        // get all artifacts data from db
         app.get('/artifacts', async (req, res) => {
             const result = await artifactsCollection.find().toArray()
             res.send(result)
@@ -52,7 +52,7 @@ async function run() {
             res.send(result);
         });
 
-        // get a single job data by id from db
+        // get a single artifact data by id from db
         app.get('/artifact/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
@@ -62,12 +62,29 @@ async function run() {
         app.put('/artifacts/:id', async (req, res) => {
             const { id } = req.params;
             const { likeCount } = req.body;
-                const artifact = await artifactsCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: { likeCount } }
-                );
+            const artifact = await artifactsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { likeCount } }
+            );
 
         });
+
+
+        // get all artifacts posted by a specific user
+        app.get('/artifacts/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { 'addedBy.email': email }
+            const result = await artifactsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // delete a artifact from db
+        app.delete('/artifact/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await artifactsCollection.deleteOne(query)
+            res.send(result)
+        })
 
 
 
