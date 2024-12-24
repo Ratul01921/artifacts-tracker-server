@@ -33,6 +33,19 @@ async function run() {
     const artifactsCollection = client.db("artifactTracker").collection("artifacts");
 
 
+    app.post('/add-artifact', async (req, res) => {
+        const artifactData = req.body
+        const result = await artifactsCollection.insertOne(artifactData)
+        console.log(result)
+        res.send(result)
+      })
+
+    // get all jobs data from db
+    app.get('/artifacts', async (req, res) => {
+        const result = await artifactsCollection.find().toArray()
+        res.send(result)
+      })
+
 
 
 
