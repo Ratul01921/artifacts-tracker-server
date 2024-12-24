@@ -47,10 +47,26 @@ async function run() {
         })
 
         app.get('/top-artifacts', async (req, res) => {
-                // Fetch artifacts sorted by likeCount in descending order and limit to 6
-                const cursor = artifactsCollection.find().sort({ likeCount: -1 }).limit(6);
-                const result = await cursor.toArray();
-                res.send(result);
+            const cursor = artifactsCollection.find().sort({ likeCount: -1 }).limit(6);
+            const result = await cursor.toArray();
+            res.send(result);
+        });
+
+        // get a single job data by id from db
+        app.get('/artifact/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await artifactsCollection.findOne(query)
+            res.send(result)
+        })
+        app.put('/artifacts/:id', async (req, res) => {
+            const { id } = req.params;
+            const { likeCount } = req.body;
+                const artifact = await artifactsCollection.updateOne(
+                    { _id: new ObjectId(id) },
+                    { $set: { likeCount } }
+                );
+
         });
 
 
