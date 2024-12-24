@@ -86,7 +86,19 @@ async function run() {
             res.send(result)
         })
 
-
+        // save a jobData in db
+        app.put('/update-artifact/:id', async (req, res) => {
+            const id = req.params.id
+            const artifactData = req.body
+            const updated = {
+                $set: artifactData,
+            }
+            const query = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const result = await artifactsCollection.updateOne(query, updated, options)
+            console.log(result)
+            res.send(result)
+        })
 
 
 
