@@ -40,11 +40,17 @@ async function run() {
             res.send(result)
         })
 
-        // get all artifacts data from db
         app.get('/artifacts', async (req, res) => {
-            const result = await artifactsCollection.find().toArray()
-            res.send(result)
-        })
+            const searchQuery = req.query.search || '';
+
+            const result = await artifactsCollection
+                .find({
+                    artifactName: { $regex: searchQuery, $options: 'i' } 
+                })
+                .toArray();
+            res.send(result);
+
+        });
 
         app.get('/top-artifacts', async (req, res) => {
             const cursor = artifactsCollection.find().sort({ likeCount: -1 }).limit(6);
