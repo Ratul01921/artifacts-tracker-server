@@ -10,9 +10,10 @@ const app = express()
 
 app.use(cors({
     origin: [
-        'http://localhost:5173',
+        'http://localhost:5174',
         'https://artifacts-tracker-84d4a.web.app',
-        'https://artifacts-tracker-84d4a.firebaseapp.com'
+        'https://artifacts-tracker-84d4a.firebaseapp.com',
+        'https://artifacts-tracker-server.vercel.app'
 
     ],
     credentials: true
@@ -62,7 +63,7 @@ async function run() {
                 .cookie('token', token, {
                     httpOnly: true,
                     // secure: false,
-                    secure: process.env.NODE_ENV === "production",
+                    secure: process.env.NODE_ENV === "production" ? true : false,
                     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
                 })
 
@@ -74,7 +75,7 @@ async function run() {
                 .clearCookie('token', {
                     httpOnly: true,
                     // secure: false,
-                    secure: process.env.NODE_ENV === "production",
+                    secure: process.env.NODE_ENV === "production" ? true : false,
                     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
                 })
                 .send({ success: true })
