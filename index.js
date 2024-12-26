@@ -1,18 +1,36 @@
 const express = require('express')
 const cors = require('cors')
+var jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 require('dotenv').config()
 
 const port = process.env.PORT || 5555
 const app = express()
 
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:5173'],
+    credentials: true
+}))
 app.use(express.json())
-
-// artifactsTrackers
-// 4fYp3bxn90ToW4Ih
+app.use(cookieParser());
 
 
+const verifyToken = (req, res, next) => {
+    // console.log('verify token', req.cookies)
+    const token = req?.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: 'unAuthorized access' })
+    }
+
+    jwt.verify(token, process.env.JWT_SECRETE, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.user = decoded;
+        next();
+    })
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.diltr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -32,7 +50,29 @@ async function run() {
 
         const artifactsCollection = client.db("artifactTracker").collection("artifacts");
 
+        // jwt related api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.JWT_SECRETE, { expiresIn: '1h' });
+            res
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: false,
+                })
 
+
+                .send({ success: true })
+        })
+        app.post('/logout', (req, res) => {
+            res
+                .clearCookie('token', {
+                    httpOnly: true,
+                    secure: false,
+                })
+                .send({ success: true })
+        })
+
+        // artifacts related
         app.post('/add-artifact', async (req, res) => {
             const artifactData = req.body
             const result = await artifactsCollection.insertOne(artifactData)
@@ -45,7 +85,7 @@ async function run() {
 
             const result = await artifactsCollection
                 .find({
-                    artifactName: { $regex: searchQuery, $options: 'i' } 
+                    artifactName: { $regex: searchQuery, $options: 'i' }
                 })
                 .toArray();
             res.send(result);
@@ -77,9 +117,13 @@ async function run() {
 
 
         // get all artifacts posted by a specific user
-        app.get('/artifacts/:email', async (req, res) => {
+        app.get('/artifacts/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { 'addedBy.email': email }
+            if (req.user.email !== req.params.email) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+
             const result = await artifactsCollection.find(query).toArray()
             res.send(result)
         })
