@@ -9,7 +9,12 @@ const port = process.env.PORT || 5555
 const app = express()
 
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: [
+        'http://localhost:5173',
+        'https://artifacts-tracker-84d4a.web.app',
+        'https://artifacts-tracker-84d4a.firebaseapp.com'
+
+    ],
     credentials: true
 }))
 app.use(express.json())
@@ -17,7 +22,6 @@ app.use(cookieParser());
 
 
 const verifyToken = (req, res, next) => {
-    // console.log('verify token', req.cookies)
     const token = req?.cookies?.token;
     if (!token) {
         return res.status(401).send({ message: 'unAuthorized access' })
@@ -46,7 +50,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const artifactsCollection = client.db("artifactTracker").collection("artifacts");
 
@@ -57,7 +61,9 @@ async function run() {
             res
                 .cookie('token', token, {
                     httpOnly: true,
-                    secure: false,
+                    // secure: false,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
                 })
 
 
@@ -67,7 +73,9 @@ async function run() {
             res
                 .clearCookie('token', {
                     httpOnly: true,
-                    secure: false,
+                    // secure: false,
+                    secure: process.env.NODE_ENV === "production",
+                    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
                 })
                 .send({ success: true })
         })
@@ -105,18 +113,25 @@ async function run() {
             const result = await artifactsCollection.findOne(query)
             res.send(result)
         })
+
         app.put('/artifacts/:id', async (req, res) => {
             const { id } = req.params;
-            const { likeCount } = req.body;
+            const { likeCount, likedBy } = req.body;
             const artifact = await artifactsCollection.updateOne(
                 { _id: new ObjectId(id) },
-                { $set: { likeCount } }
+                {
+                    $set: { likeCount: likeCount },
+                    $addToSet: { likedBy: { $each: likedBy } },
+                }
             );
 
         });
+        app.get('/artifacts/likes/:email', async (req, res) => {
+            const { email } = req.params;
+            const artifacts = await artifactsCollection.find({ likedBy: email }).toArray();
+            res.status(200).json(artifacts);
+        });
 
-
-        // get all artifacts posted by a specific user
         app.get('/artifacts/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { 'addedBy.email': email }
@@ -150,13 +165,8 @@ async function run() {
             res.send(result)
         })
 
-
-
-
-
-
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
