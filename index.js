@@ -5,12 +5,12 @@ const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 require('dotenv').config()
 
-const port = process.env.PORT || 5555
+const port = process.env.PORT || 5666
 const app = express()
 
 app.use(cors({
     origin: [
-        'http://localhost:5174',
+        'http://localhost:5173',
         'https://artifacts-tracker-84d4a.web.app',
         'https://artifacts-tracker-84d4a.firebaseapp.com',
         'https://artifacts-tracker-server.vercel.app'
@@ -51,7 +51,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
+        await client.connect();
 
         const artifactsCollection = client.db("artifactTracker").collection("artifacts");
 
@@ -171,7 +171,7 @@ async function run() {
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
-        // await client.close();
+        // await client.close();   
     }
 }
 run().catch(console.dir);
